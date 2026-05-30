@@ -8,4 +8,4 @@ backend/uploads/*
 .vscode/
 release/
 *.blockmap
-Thumbs.d
+Thumbs.db
