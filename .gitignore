@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.db
+.env
+.DS_Store
+backend/uploads/*
+.claude/
+.vscode/
+release/
+*.blockmap
+Thumbs.d

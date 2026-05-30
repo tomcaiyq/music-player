@@ -1,0 +1,131 @@
+/* ===== 浅色主题（默认） ===== */
+:root {
+  --ncm-primary: #C20C0C;
+  --ncm-primary-hover: #E13E3E;
+
+  --ncm-bg-header: #C20C0C;
+  --ncm-bg-sidebar: #EDEDED;
+  --ncm-bg-main: #F5F5F5;
+  --ncm-bg-card: #fff;
+  --ncm-bg-input: #fff;
+  --ncm-bg-hover: #F5F5F5;
+  --ncm-bg-active: #FFF1F0;
+  --ncm-bg-player: #2D2D2D;
+  --ncm-bg-playlist: #2A2A2A;
+
+  --ncm-text-primary: #333;
+  --ncm-text-secondary: #666;
+  --ncm-text-tertiary: #999;
+  --ncm-text-placeholder: #bbb;
+  --ncm-text-inverse: #eee;
+  --ncm-text-inverse-sub: #888;
+
+  --ncm-border: #f0f0f0;
+  --ncm-border-light: #f7f7f7;
+
+  --ncm-scroll-thumb: #ccc;
+  --ncm-scroll-thumb-hover: #aaa;
+
+  --ncm-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  --player-bar-height: 72px;
+}
+
+/* ===== 深色主题 ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ncm-bg-header: #C20C0C;
+    --ncm-bg-sidebar: #1A1A1A;
+    --ncm-bg-main: #121212;
+    --ncm-bg-card: #1E1E1E;
+    --ncm-bg-input: #2A2A2A;
+    --ncm-bg-hover: #2A2A2A;
+    --ncm-bg-active: #3A1A1A;
+    --ncm-bg-player: #1A1A1A;
+    --ncm-bg-playlist: #222;
+
+    --ncm-text-primary: #E0E0E0;
+    --ncm-text-secondary: #AAA;
+    --ncm-text-tertiary: #777;
+    --ncm-text-placeholder: #555;
+    --ncm-text-inverse: #eee;
+    --ncm-text-inverse-sub: #888;
+
+    --ncm-border: #2A2A2A;
+    --ncm-border-light: #222;
+
+    --ncm-scroll-thumb: #444;
+    --ncm-scroll-thumb-hover: #555;
+
+    --ncm-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ===== 全局基础 ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+  color: var(--ncm-text-primary);
+  background: var(--ncm-bg-main);
+  overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ncm-scroll-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ncm-scroll-thumb-hover); }
+
+/* ===== Element Plus 浅色覆盖 ===== */
+.el-menu { border-right: none !important; }
+.el-menu-item { height: 48px !important; line-height: 48px !important; font-size: 13px !important; }
+.el-menu-item:hover { background: var(--ncm-bg-hover) !important; }
+.el-menu-item.is-active { background: var(--ncm-bg-hover) !important; color: var(--ncm-primary) !important; }
+.el-card { border: 1px solid var(--ncm-border); border-radius: 8px; background: var(--ncm-bg-card); }
+.el-button--primary {
+  --el-button-bg-color: var(--ncm-primary);
+  --el-button-border-color: var(--ncm-primary);
+  --el-button-hover-bg-color: var(--ncm-primary-hover);
+  --el-button-hover-border-color: var(--ncm-primary-hover);
+}
+.el-slider__bar { background: var(--ncm-primary) !important; }
+.el-slider__button { border-color: var(--ncm-primary) !important; }
+.el-progress__text { font-size: 12px !important; }
+
+/* ===== 深色 Element Plus 覆盖 ===== */
+@media (prefers-color-scheme: dark) {
+  .el-menu { background-color: transparent !important; }
+  .el-menu-item { color: var(--ncm-text-secondary) !important; }
+  .el-menu-item:hover { background: var(--ncm-bg-hover) !important; color: var(--ncm-text-primary) !important; }
+  .el-menu-item.is-active { color: var(--ncm-primary) !important; }
+
+  .el-table { --el-table-border-color: var(--ncm-border); --el-table-bg-color: var(--ncm-bg-card); --el-table-tr-bg-color: var(--ncm-bg-card); --el-table-header-bg-color: var(--ncm-bg-input); --el-table-row-hover-bg-color: var(--ncm-bg-hover); }
+  .el-table th.el-table__cell { background: var(--ncm-bg-input) !important; color: var(--ncm-text-secondary); }
+  .el-table td.el-table__cell { color: var(--ncm-text-primary); }
+
+  .el-input__wrapper { background: var(--ncm-bg-input) !important; box-shadow: 0 0 0 1px var(--ncm-border) inset !important; }
+  .el-input__inner { color: var(--ncm-text-primary) !important; }
+  .el-input__inner::placeholder { color: var(--ncm-text-placeholder) !important; }
+  .el-input__prefix .el-icon { color: var(--ncm-text-tertiary) !important; }
+
+  .el-button { --el-button-bg-color: var(--ncm-bg-input); --el-button-border-color: var(--ncm-border); --el-button-text-color: var(--ncm-text-primary); --el-button-hover-bg-color: var(--ncm-bg-hover); --el-button-hover-border-color: var(--ncm-text-tertiary); }
+  .el-button.is-text { background: transparent !important; border: none !important; }
+
+  .el-dialog, .el-message-box { background: var(--ncm-bg-card) !important; border-color: var(--ncm-border) !important; }
+  .el-dialog__title, .el-message-box__title { color: var(--ncm-text-primary) !important; }
+  .el-dialog__body, .el-message-box__message { color: var(--ncm-text-secondary) !important; }
+
+  .el-form-item__label { color: var(--ncm-text-secondary) !important; }
+  .el-divider { border-color: var(--ncm-border) !important; }
+  .el-divider__text { background: var(--ncm-bg-card) !important; color: var(--ncm-text-tertiary) !important; }
+  .el-empty__description p { color: var(--ncm-text-tertiary) !important; }
+  .el-loading-mask { background: rgba(0, 0, 0, 0.7) !important; }
+
+  .el-slider__runway { background: #444 !important; }
+}
