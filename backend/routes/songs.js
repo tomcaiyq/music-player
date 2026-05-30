@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
+import { parseFile } from 'music-metadata';
 import { db } from '../db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,6 +41,20 @@ router.post('/save-online', async (req, res) => {
     const buffer = Buffer.from(await response.arrayBuffer());
     fs.writeFileSync(filepath, buffer);
 
+    // 提取音频时长
+    let duration = null;
+    try {
+      const metadata = await parseFile(filepath);
+      if (metadata.format.duration) {
+        const totalSec = Math.round(metadata.format.duration);
+        const min = Math.floor(totalSec / 60);
+        const sec = totalSec % 60;
+        duration = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      }
+    } catch (e) {
+      console.warn('Failed to extract duration:', e.message);
+    }
+
     // 保存歌词文件
     if (lrc) {
       const lrcPath = path.join(uploadsDir, filename.replace('.mp3', '.lrc'));
@@ -64,7 +79,7 @@ router.post('/save-online', async (req, res) => {
     const result = db.prepare(`
       INSERT INTO songs (filename, title, artist, album, duration, filepath, cover)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(filename, title || '未知标题', artist || '未知歌手', '', null, `/uploads/${filename}`, coverPath);
+    `).run(filename, title || '未知标题', artist || '未知歌手', '', duration, `/uploads/${filename}`, coverPath);
 
     res.json({ id: result.lastInsertRowid, message: '保存成功' });
   } catch (error) {

@@ -25,7 +25,10 @@
             v-for="(line, i) in parsedLines"
             :key="i"
             class="lyrics-line"
-            :class="{ active: i === currentLine }"
+            :class="{
+              active: i === currentLine,
+              near: Math.abs(i - currentLine) <= 2 && i !== currentLine
+            }"
             :ref="el => { if (i === currentLine) activeLineEl = el }"
           >
             {{ line.text }}
@@ -105,7 +108,7 @@ const currentLine = computed(() => {
 })
 
 // 自动滚动到当前行
-watch(currentLine, async () => {
+async function scrollToActive() {
   await nextTick()
   if (activeLineEl.value && lyricsRef.value) {
     const container = lyricsRef.value
@@ -113,7 +116,10 @@ watch(currentLine, async () => {
     const offset = el.offsetTop - container.offsetTop - container.clientHeight / 2 + el.clientHeight / 2
     container.scrollTo({ top: offset, behavior: 'smooth' })
   }
-})
+}
+
+watch(currentLine, scrollToActive)
+watch(() => props.visible, (v) => { if (v) scrollToActive() })
 
 function close() {
   emit('close')
@@ -240,22 +246,30 @@ function close() {
 .lyrics-scroll::-webkit-scrollbar { width: 0; }
 
 .lyrics-line {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.4);
-  line-height: 2;
+  font-size: clamp(14px, 2.5vw, 18px);
+  color: rgba(255, 255, 255, 0.3);
+  line-height: 2.2;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.4s ease;
   cursor: pointer;
+  transform: scale(0.95);
 }
 
 .lyrics-line:hover {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .lyrics-line.active {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: clamp(18px, 3.5vw, 26px);
+  font-weight: 700;
   color: #fff;
+  transform: scale(1);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.lyrics-line.near {
+  color: rgba(255, 255, 255, 0.6);
+  transform: scale(0.98);
 }
 
 .lyrics-empty {
@@ -287,9 +301,15 @@ function close() {
 }
 
 @media (max-width: 768px) {
-  .lyrics-container { flex-direction: column; gap: 20px; }
-  .disc { width: 160px; height: 160px; }
-  .disc-cover { width: 100px; height: 100px; }
-  .lyrics-right { width: 90vw; height: 50vh; }
+  .lyrics-container { flex-direction: column; gap: 16px; padding: 20px 0; }
+  .disc { width: 140px; height: 140px; }
+  .disc-cover { width: 90px; height: 90px; }
+  .song-meta h3 { font-size: clamp(16px, 4vw, 20px); }
+  .song-meta p { font-size: clamp(12px, 3vw, 14px); }
+  .lyrics-right { width: 100%; height: 45vh; }
+  .lyrics-line { font-size: clamp(15px, 4vw, 20px); }
+  .lyrics-line.active { font-size: clamp(20px, 5.5vw, 30px); }
+  .lyrics-line.near { font-size: clamp(17px, 4.5vw, 24px); }
+  .close-btn { top: 12px; right: 12px; width: 36px; height: 36px; }
 }
 </style>

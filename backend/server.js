@@ -47,8 +47,8 @@ app.get('*', (req, res) => {
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🎵 音乐播放器后端运行在 http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🎵 音乐播放器后端运行在 http://0.0.0.0:${PORT}`);
   console.log('📋 列表接口：GET /api/songs/list');
   console.log('❤️ 收藏接口：GET /api/songs/favorites');
 });

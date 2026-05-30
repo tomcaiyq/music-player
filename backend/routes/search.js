@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
         headers: { 'User-Agent': UA }
       }).then(r => r.text());
 
-      const rowRe = /<tr>\s*<td[^>]*>(\d+)<\/td>\s*<td>\s*<a href="(\/play\/\d+)"[^>]*>([\s\S]*?)<\/a>\s*<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/g;
+      const rowRe = /<tr>[\s\S]*?<td[^>]*>(\d+)<\/td>[\s\S]*?<td>[\s\S]*?<a href="(\/play\/\d+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/g;
       let m;
       while ((m = rowRe.exec(html)) !== null) {
         const id = m[2].replace('/play/', '');

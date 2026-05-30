@@ -16,12 +16,6 @@
           </template>
         </el-input>
         <el-button type="primary" size="large" @click="doSearch" :loading="loading">搜索</el-button>
-        <el-select v-model="limit" size="large" class="limit-select">
-          <el-option :value="10" label="10条" />
-          <el-option :value="20" label="20条" />
-          <el-option :value="50" label="50条" />
-          <el-option :value="100" label="100条" />
-        </el-select>
       </div>
 
       <!-- 结果标题 -->
@@ -32,7 +26,7 @@
 
       <!-- 搜索结果列表 -->
       <div class="song-table" v-loading="loading" element-loading-text="搜索中...">
-        <div class="table-header">
+        <div v-if="!isMobile" class="table-header">
           <div class="col-index"></div>
           <div class="col-title">歌曲</div>
           <div class="col-artist">歌手</div>
@@ -42,15 +36,17 @@
           v-for="(song, index) in results"
           :key="song.id"
           class="table-row"
-          :class="{ even: index % 2 === 0 }"
+          :class="{ even: index % 2 === 0, 'is-mobile': isMobile }"
           @dblclick="playSong(index)"
+          @click="isMobile && playSong(index)"
         >
           <div class="col-index">{{ String(index + 1).padStart(2, '0') }}</div>
           <div class="col-title">
             <span class="song-name">{{ song.title }}</span>
+            <span v-if="isMobile" class="song-artist-mobile">{{ song.artist }}</span>
           </div>
-          <div class="col-artist">{{ song.artist }}</div>
-          <div class="col-actions">
+          <div v-if="!isMobile" class="col-artist">{{ song.artist }}</div>
+          <div class="col-actions" :class="{ 'mobile-visible': isMobile }">
             <el-button text size="small" @click.stop="playSong(index)" class="action-btn" :loading="song._loading">
               <el-icon><CaretRight /></el-icon>
             </el-button>
@@ -74,8 +70,11 @@ import { ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { CaretRight, Download, Search } from '@element-plus/icons-vue'
 import { usePlayer } from '../composables/usePlayer.js'
+import { useMobile } from '../composables/useMobile.js'
 import { apiFetch } from '../config.js'
 import { ElMessage } from 'element-plus'
+
+const { isMobile } = useMobile()
 
 const route = useRoute()
 const { setSongs, playSong: playerPlaySong } = usePlayer()
@@ -84,7 +83,6 @@ const query = ref('')
 const results = ref([])
 const loading = ref(false)
 const searched = ref(false)
-const limit = ref(20)
 const totalResults = ref(0)
 
 onMounted(() => {
@@ -106,7 +104,7 @@ async function doSearch() {
   loading.value = true
   searched.value = true
   try {
-    const res = await apiFetch(`/api/search?q=${encodeURIComponent(query.value)}&limit=${limit.value}`)
+    const res = await apiFetch(`/api/search?q=${encodeURIComponent(query.value)}&limit=20`)
     const data = await res.json()
     if (data.error) throw new Error(data.error)
     results.value = (data.results || []).map(s => ({ ...s, _loading: false, _saving: false }))
@@ -215,5 +213,62 @@ async function saveSong(index) {
 /* 搜索框 */
 .search-bar { display: flex; align-items: center; gap: 12px; padding: 20px; border-bottom: 1px solid var(--ncm-border); }
 .search-input { flex: 1; }
-.limit-select { width: 100px; }
+
+/* 移动端 */
+@media (max-width: 768px) {
+  .search-view { padding: 0; }
+  .search-panel { border-radius: 0; box-shadow: none; }
+  .search-bar {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .search-bar .el-button { order: 3; }
+  .limit-select { width: 80px; order: 2; }
+
+  .table-row.is-mobile {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .table-row.is-mobile:active { background: var(--ncm-bg-hover); }
+
+  .table-row.is-mobile .col-index {
+    width: 28px;
+    font-size: 12px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  .table-row.is-mobile .col-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .song-artist-mobile {
+    font-size: 11px;
+    color: var(--ncm-text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .col-actions.mobile-visible {
+    opacity: 1 !important;
+    width: auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+  }
+  .col-actions.mobile-visible .action-btn { padding: 8px !important; }
+  .col-actions.mobile-visible .action-btn:active { opacity: 0.6; }
+}
 </style>

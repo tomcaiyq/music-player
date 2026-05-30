@@ -8,12 +8,16 @@
           <span>云音乐</span>
         </div>
       </div>
+      <!-- 移动端：服务器设置按钮 -->
+      <el-button v-if="isMobile" text circle class="header-server-btn" @click="showServerDialog = true">
+        <el-icon :size="18" style="color:#fff"><Setting /></el-icon>
+      </el-button>
     </header>
 
     <!-- 主体区域 -->
     <div class="ncm-body">
-      <!-- 左侧导航 -->
-      <aside class="ncm-sidebar">
+      <!-- 左侧导航（桌面端） -->
+      <aside v-if="!isMobile" class="ncm-sidebar">
         <div class="sidebar-section">
           <div class="section-title">在线</div>
           <el-menu :default-active="activeRoute" router>
@@ -62,12 +66,21 @@
       </main>
     </div>
 
-    <!-- 底部播放器 -->
-    <footer class="ncm-player-bar" :class="{ active: playerState.currentSong }">
+    <!-- 移动端：服务器地址弹窗 -->
+    <el-dialog v-if="isMobile" v-model="showServerDialog" title="服务器设置" width="90%" :append-to-body="true">
+      <el-input v-model="serverUrl" placeholder="http://IP:3001" clearable @change="onServerChange" />
+      <template #footer>
+        <el-button type="primary" @click="showServerDialog = false">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 桌面端：底部播放器 -->
+    <footer v-if="!isMobile" class="ncm-player-bar">
       <!-- 歌曲信息 -->
       <div class="bar-song" v-if="playerState.currentSong">
-        <div class="bar-cover">
-          <el-icon :size="20"><Headset /></el-icon>
+        <div class="bar-cover" :class="{ spinning: playerState.isPlaying }" @click="showLyrics = !showLyrics">
+          <img v-if="playerState.currentSong.cover" :src="resolveUrl(playerState.currentSong.cover)" alt="cover" />
+          <el-icon v-else :size="20"><Headset /></el-icon>
         </div>
         <div class="bar-info">
           <div class="bar-title">{{ playerState.currentSong.title || playerState.currentSong.filename }}</div>
@@ -94,13 +107,7 @@
           <el-button text circle size="small" @click="prevSong">
             <el-icon :size="18"><Back /></el-icon>
           </el-button>
-          <el-button
-            type="primary"
-            circle
-            size="default"
-            class="play-btn-main"
-            @click="togglePlay"
-          >
+          <el-button type="primary" circle size="default" class="play-btn-main" @click="togglePlay">
             <el-icon :size="20" v-if="!playerState.isPlaying"><CaretRight /></el-icon>
             <el-icon :size="20" v-else><VideoPause /></el-icon>
           </el-button>
@@ -110,15 +117,7 @@
         </div>
         <div class="progress-row">
           <span class="time-text">{{ formatTime(currentPos) }}</span>
-          <el-slider
-            v-model="seekPos"
-            :max="durationMax"
-            :show-tooltip="false"
-            size="small"
-            class="bar-slider"
-            @mousedown="seeking = true"
-            @change="onSeek"
-          />
+          <el-slider v-model="seekPos" :max="durationMax" :show-tooltip="false" size="small" class="bar-slider" @mousedown="seeking = true" @change="onSeek" />
           <span class="time-text">{{ formatTime(durationMax) }}</span>
         </div>
       </div>
@@ -130,14 +129,7 @@
             <el-icon :size="16" v-if="volume > 0"><Mute /></el-icon>
             <el-icon :size="16" v-else><CloseBold /></el-icon>
           </el-button>
-          <el-slider
-            v-model="volume"
-            :max="1"
-            :step="0.01"
-            :show-tooltip="false"
-            size="small"
-            class="vol-slider"
-          />
+          <el-slider v-model="volume" :max="1" :step="0.01" :show-tooltip="false" size="small" class="vol-slider" />
         </div>
         <el-button text circle size="small" @click="showPlaylist = !showPlaylist" class="playlist-btn">
           <el-icon :size="16"><List /></el-icon>
@@ -149,6 +141,80 @@
 
       <!-- 播放列表弹出 -->
       <div v-if="showPlaylist" class="playlist-popup">
+        <div class="popup-header">
+          <span>播放列表 ({{ playerState.songs.length }})</span>
+          <el-button text size="small" @click="clearAll">
+            <el-icon><Delete /></el-icon> 清空
+          </el-button>
+        </div>
+        <div class="popup-list">
+          <div
+            v-for="(song, idx) in playerState.songs"
+            :key="song.id || idx"
+            :class="{ active: idx === playerState.currentIndex }"
+            class="popup-item"
+            @click="playAt(idx)"
+          >
+            <div class="item-main">
+              <span class="item-name">{{ song.title || song.filename }}</span>
+              <span class="item-sep">-</span>
+              <span class="item-artist">{{ song.artist || '未知歌手' }}</span>
+            </div>
+            <span class="item-dur">{{ song.duration || '--:--' }}</span>
+          </div>
+          <el-empty v-if="playerState.songs.length === 0" description="暂无歌曲" :image-size="48" />
+        </div>
+      </div>
+    </footer>
+
+    <!-- 移动端：底部区域（播放条 + Tab栏） -->
+    <div v-if="isMobile" class="mobile-bottom">
+      <!-- 底部播放器 -->
+      <footer class="ncm-player-bar is-mobile" :class="{ active: playerState.currentSong }">
+        <!-- 移动端：单行横排 -->
+        <template v-if="isMobile">
+          <!-- 歌曲信息 -->
+          <div class="bar-song" v-if="playerState.currentSong">
+            <div class="bar-cover" :class="{ spinning: playerState.isPlaying }" @click="showLyrics = !showLyrics">
+              <img v-if="playerState.currentSong.cover" :src="resolveUrl(playerState.currentSong.cover)" alt="cover" />
+              <el-icon v-else :size="18"><Headset /></el-icon>
+            </div>
+            <div class="bar-info">
+              <div class="bar-title">{{ playerState.currentSong.title || playerState.currentSong.filename }}</div>
+              <div class="bar-artist">{{ playerState.currentSong.artist || '未知歌手' }}</div>
+            </div>
+          </div>
+          <div class="bar-song empty" v-else>
+            <div class="bar-cover empty-cover">
+              <el-icon :size="18"><Headset /></el-icon>
+            </div>
+            <div class="bar-info">
+              <div class="bar-title">未在播放</div>
+            </div>
+          </div>
+
+          <!-- 控制按钮 -->
+          <div class="mobile-controls">
+            <el-button text circle size="small" @click="toggleFavoriteCurrent" class="bar-fav-btn">
+              <el-icon :size="16" :class="{ 'is-fav': isCurrentFavorite }">
+                <StarFilled />
+              </el-icon>
+            </el-button>
+            <el-button type="primary" circle size="small" class="play-btn-main" @click="togglePlay">
+              <el-icon :size="18" v-if="!playerState.isPlaying"><CaretRight /></el-icon>
+              <el-icon :size="18" v-else><VideoPause /></el-icon>
+            </el-button>
+            <el-button text circle size="small" @click="nextSong">
+              <el-icon :size="16"><Right /></el-icon>
+            </el-button>
+            <el-button text circle size="small" @click="showPlaylist = !showPlaylist">
+              <el-icon :size="16"><List /></el-icon>
+            </el-button>
+          </div>
+        </template>
+
+        <!-- 播放列表弹出 -->
+        <div v-if="showPlaylist" class="playlist-popup is-mobile">
           <div class="popup-header">
             <span>播放列表 ({{ playerState.songs.length }})</span>
             <el-button text size="small" @click="clearAll">
@@ -173,7 +239,28 @@
             <el-empty v-if="playerState.songs.length === 0" description="暂无歌曲" :image-size="48" />
           </div>
         </div>
-    </footer>
+      </footer>
+
+      <!-- Tab 导航栏 -->
+      <nav class="mobile-tab-bar">
+        <router-link to="/" class="tab-item" :class="{ active: route.path === '/' && !route.query.tab }">
+          <el-icon :size="20"><HomeFilled /></el-icon>
+          <span>音乐</span>
+        </router-link>
+        <router-link to="/search" class="tab-item" :class="{ active: route.path === '/search' }">
+          <el-icon :size="20"><Search /></el-icon>
+          <span>发现</span>
+        </router-link>
+        <router-link to="/?tab=favorites" class="tab-item" :class="{ active: route.query.tab === 'favorites' }">
+          <el-icon :size="20"><Star /></el-icon>
+          <span>收藏</span>
+        </router-link>
+        <router-link to="/?tab=recent" class="tab-item" :class="{ active: route.query.tab === 'recent' }">
+          <el-icon :size="20"><Clock /></el-icon>
+          <span>最近</span>
+        </router-link>
+      </nav>
+    </div>
 
     <!-- 歌词面板 -->
     <LyricsPanel
@@ -194,13 +281,17 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   Headset, HomeFilled, Star, StarFilled, Clock,
-  CaretRight, VideoPause, Back, Right, Mute, CloseBold, List, Delete, Search, Document
+  CaretRight, VideoPause, Back, Right, Mute, CloseBold, List, Delete, Search, Document, Setting
 } from '@element-plus/icons-vue'
 import { usePlayer } from './composables/usePlayer.js'
+import { useMobile } from './composables/useMobile.js'
 import { apiFetch, resolveUrl, getApiServer, setApiServer } from './config.js'
+import { ElMessage } from 'element-plus'
 import LyricsPanel from './components/LyricsPanel.vue'
 
 const route = useRoute()
+const { isMobile } = useMobile()
+const showServerDialog = ref(false)
 
 // 服务器地址配置
 const serverUrl = ref(getApiServer())
@@ -358,8 +449,33 @@ async function loadFavorites() {
 
 async function toggleFavoriteCurrent() {
   if (!playerState.currentSong) return
-  const id = playerState.currentSong.id
+  let song = playerState.currentSong
+  let id = song.id
+
   try {
+    // 在线歌曲：先保存到本地
+    if (String(id).startsWith('online_')) {
+      ElMessage.info('正在保存到本地...')
+      const saveRes = await apiFetch('/api/songs/save-online', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: song.filepath || player.src,
+          title: song.title,
+          artist: song.artist,
+          cover: song.cover,
+          lrc: song.lrc
+        })
+      })
+      const saveData = await saveRes.json()
+      if (!saveRes.ok) throw new Error(saveData.error)
+      id = saveData.id
+      // 更新当前歌曲的 ID
+      rawState.currentSong.id = id
+      rawState.songs[rawState.currentIndex].id = id
+      ElMessage.success('已保存到本地')
+    }
+
     if (favorites.value.has(id)) {
       await apiFetch(`/api/songs/${id}/favorite`, { method: 'DELETE' })
       favorites.value.delete(id)
@@ -367,10 +483,9 @@ async function toggleFavoriteCurrent() {
       await apiFetch(`/api/songs/${id}/favorite`, { method: 'POST' })
       favorites.value.add(id)
     }
-    // trigger reactivity
     favorites.value = new Set(favorites.value)
   } catch (e) {
-    ElMessage.error('操作失败')
+    ElMessage.error('操作失败：' + (e.message || ''))
   }
 }
 
@@ -385,7 +500,9 @@ defineExpose({ playSong, togglePlay })
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   background: var(--ncm-bg-main);
+  overflow: hidden;
 }
 
 /* ===== 顶部栏 ===== */
@@ -453,34 +570,55 @@ defineExpose({ playSong, togglePlay })
   flex: 1;
   background: var(--ncm-bg-main);
   overflow-y: auto;
-  padding-bottom: var(--player-bar-height);
   transition: background 0.3s;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ===== 底部播放器 ===== */
 .ncm-player-bar {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
+  flex-shrink: 0;
   height: var(--player-bar-height);
+  margin: 0 12px 12px;
   background: var(--ncm-bg-player);
-  border-top: 1px solid var(--ncm-border);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  z-index: 1000;
+  padding: 0 24px;
   gap: 16px;
-  transition: background 0.3s, transform 0.3s;
-  transform: translateY(100%);
-}
-
-.ncm-player-bar.active {
-  transform: translateY(0);
+  transition: background 0.3s;
 }
 
 /* 歌曲信息 */
 .bar-song { display: flex; align-items: center; gap: 12px; width: 240px; flex-shrink: 0; }
-.bar-cover { width: 44px; height: 44px; background: linear-gradient(135deg, var(--ncm-text-tertiary) 0%, var(--ncm-text-placeholder) 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--ncm-text-inverse-sub); flex-shrink: 0; }
-.empty-cover { opacity: 0.5; }
+.bar-cover {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--ncm-text-tertiary) 0%, var(--ncm-text-placeholder) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ncm-text-inverse-sub);
+  flex-shrink: 0;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+.bar-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.bar-cover.spinning {
+  animation: coverSpin 8s linear infinite;
+}
+@keyframes coverSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.empty-cover { opacity: 0.5; cursor: default; }
 .bar-info { min-width: 0; flex: 1; }
 .bar-title { font-size: 13px; color: var(--ncm-text-inverse); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
 .bar-artist { font-size: 12px; color: var(--ncm-text-inverse-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -513,15 +651,17 @@ defineExpose({ playSong, togglePlay })
 /* ===== 播放列表弹窗 ===== */
 .playlist-popup {
   position: absolute;
-  bottom: 100%; right: 20px;
-  width: 360px; max-height: 420px;
+  bottom: calc(100% + 12px);
+  right: 0;
+  width: 360px;
+  max-height: 420px;
   background: var(--ncm-bg-playlist);
-  border: 1px solid var(--ncm-border);
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
+  border: none;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
 }
 
 .popup-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--ncm-border); font-size: 13px; color: var(--ncm-text-inverse); }
@@ -542,13 +682,94 @@ defineExpose({ playSong, togglePlay })
 .server-input-wrap { padding: 8px 12px; }
 .server-input :deep(.el-input__inner) { font-size: 11px; height: 28px; }
 
-/* ===== 响应式 ===== */
+/* ===== 移动端 ===== */
+.header-server-btn { margin-left: auto; }
+
+/* 移动端底部区域：播放条 + Tab 栏，flex 自适应 */
+.mobile-bottom {
+  flex-shrink: 0;
+  background: var(--ncm-bg-player);
+}
+
+/* 移动端播放器 */
+.ncm-player-bar.is-mobile {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  height: auto;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 10px;
+  gap: 8px;
+  transform: none;
+  border: none;
+  border-radius: 16px 16px 0 0;
+  background: var(--ncm-bg-player);
+}
+
+.ncm-player-bar.is-mobile .bar-song { flex: 1; min-width: 0; width: auto; }
+.ncm-player-bar.is-mobile .bar-cover { width: 40px; height: 40px; }
+
+.mobile-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.mobile-controls .el-button { color: var(--ncm-text-inverse) !important; }
+.mobile-controls .bar-fav-btn { color: var(--ncm-text-inverse-sub) !important; }
+.mobile-controls .bar-fav-btn .is-fav { color: var(--ncm-primary) !important; }
+
+/* 移动端 Tab 栏 */
+.mobile-tab-bar {
+  height: 56px;
+  background: var(--ncm-bg-card);
+  border-top: 1px solid var(--ncm-border);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--ncm-text-tertiary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.tab-item.active { color: var(--ncm-primary); }
+.tab-item:active { opacity: 0.7; }
+
+/* 移动端播放列表 */
+.playlist-popup.is-mobile {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  border-radius: 16px 16px 0 0;
+  max-height: 60vh;
+  border: 1px solid var(--ncm-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+}
+
 @media (max-width: 768px) {
-  .ncm-sidebar { width: 56px; }
-  .section-title, .ncm-sidebar .el-menu-item span { display: none; }
-  .ncm-sidebar .el-menu-item { padding-left: 0 !important; justify-content: center; }
-  .search-box { width: 140px; }
-  .bar-song { width: 140px; }
-  .playlist-popup { width: calc(100vw - 40px); right: 20px; }
+  .ncm-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .ncm-main {
+    padding-bottom: 0 !important;
+    overflow-y: auto;
+  }
 }
 </style>

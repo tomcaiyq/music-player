@@ -75,6 +75,9 @@ body {
   background: var(--ncm-bg-main);
   overflow: hidden;
   transition: background 0.3s, color 0.3s;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 ::-webkit-scrollbar { width: 6px; }
